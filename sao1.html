@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="StudyQuest">
+<meta name="theme-color" content="#0d0f1a">
+<title>StudyQuest</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0d0f1a;--surface:#131627;--surface2:#1a1e35;--border:rgba(255,255,255,0.08);
+  --text:#e8eaf0;--muted:#6b7280;--accent:#7c6af7;--accent2:#a78bfa;--accent-glow:rgba(124,106,247,0.25);
+  --gold:#f59e0b;--gold-light:#fcd34d;--red:#ef4444;--green:#22c55e;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@keyframes glow{0%,100%{box-shadow:0 0 8px var(--accent-glow);}50%{box-shadow:0 0 22px var(--accent-glow);}}
+@keyframes floatup{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-50px);}}
+@keyframes boss-flash{0%,100%{filter:brightness(1);}50%{filter:brightness(2.5) saturate(2);}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+@keyframes ring{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+@keyframes badgepop{0%{transform:scale(0) rotate(-10deg);opacity:0;}70%{transform:scale(1.15) rotate(3deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+@keyframes countdown{from{stroke-dashoffset:0;}to{stroke-dashoffset:283;}}
+html,body{height:100%;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;background:var(--bg);color:var(--text);}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+.status-bar{height:var(--safe-top);background:var(--surface);}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(72px + var(--safe-bottom));}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(19,22,39,0.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid var(--border);padding-bottom:var(--safe-bottom);display:flex;z-index:100;}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 5px;cursor:pointer;gap:2px;}
+.tab-item:active{opacity:0.5;}
+.tab-icon{font-size:20px;line-height:1;}
+.tab-label{font-size:9px;color:var(--muted);font-weight:500;letter-spacing:0.02em;}
+.tab-item.active .tab-label{color:var(--accent2);}
+.view{display:none;flex-direction:column;min-height:100%;}
+.view.active{display:flex;}
+.page-header{background:var(--surface);padding:14px 18px 12px;border-bottom:0.5px solid var(--border);position:sticky;top:0;z-index:50;}
+.page-title{font-size:24px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.page-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.hrow{display:flex;justify-content:space-between;align-items:center;}
+.section{padding:14px 14px 0;}
+.section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+.card{background:var(--surface);border-radius:16px;overflow:hidden;margin:0 14px 12px;}
+.icard{background:var(--surface2);border-radius:14px;padding:14px;margin:0 14px 10px;border:1px solid var(--border);}
+
+/* PLAYER */
+.player-strip{background:var(--surface2);border-bottom:0.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;}
+.avatar-wrap{position:relative;flex-shrink:0;}
+.player-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:22px;animation:glow 3s infinite;}
+.avatar-level{position:absolute;bottom:-2px;right:-2px;background:var(--gold);color:#000;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.player-info{flex:1;min-width:0;}
+.pname-row{display:flex;align-items:center;gap:6px;margin-bottom:2px;}
+.pname{font-size:14px;font-weight:600;}
+.ptitle{font-size:11px;color:var(--accent2);}
+.streak-chip{display:flex;align-items:center;gap:4px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);border-radius:99px;padding:3px 8px;font-size:11px;color:var(--gold);font-weight:600;margin-bottom:5px;}
+.xp-row{display:flex;align-items:center;gap:8px;}
+.xp-track{flex:1;height:5px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width 0.6s cubic-bezier(.34,1.56,.64,1);}
+.xp-txt{font-size:10px;color:var(--muted);white-space:nowrap;}
+.coins-badge{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--gold);font-weight:600;}
+
+/* POMODORO */
+.pomo-card{margin:14px;background:var(--surface2);border-radius:20px;padding:24px 20px;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden;}
+.pomo-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,106,247,0.08),transparent 60%);pointer-events:none;}
+.pomo-mode-tabs{display:flex;gap:6px;justify-content:center;margin-bottom:20px;}
+.pomo-tab{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all 0.15s;}
+.pomo-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pomo-ring{position:relative;width:160px;height:160px;margin:0 auto 20px;}
+.pomo-svg{transform:rotate(-90deg);}
+.pomo-track{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:8;}
+.pomo-prog{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;stroke-dasharray:440;transition:stroke-dashoffset 1s linear;}
+.pomo-time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.pomo-digits{font-size:38px;font-weight:700;color:var(--text);letter-spacing:-1px;font-variant-numeric:tabular-nums;}
+.pomo-sublabel{font-size:11px;color:var(--muted);margin-top:2px;}
+.pomo-btns{display:flex;gap:10px;justify-content:center;margin-bottom:16px;}
+.pomo-btn{padding:12px 28px;border-radius:14px;border:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.pomo-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pomo-btn.primary:active{opacity:0.8;}
+.pomo-btn.secondary{background:transparent;color:var(--muted);}
+.pomo-btn.secondary:active{background:var(--surface);}
+.pomo-subject-sel{width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none;-webkit-appearance:none;}
+.pomo-sessions{display:flex;gap:6px;justify-content:center;margin-top:14px;}
+.pomo-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.1);transition:background 0.3s;}
+.pomo-dot.done{background:var(--accent);}
+.pomo-stats-row{display:flex;gap:10px;justify-content:center;margin-top:14px;}
+.pomo-stat{text-align:center;}
+.pomo-stat-val{font-size:18px;font-weight:700;color:var(--text);}
+.pomo-stat-lbl{font-size:10px;color:var(--muted);}
+
+/* QUESTS */
+.quest-row{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border-bottom:0.5px solid var(--border);}
+.quest-row:last-child{border-bottom:none;}
+.quest-icon-box{width:38px;height:38px;border-radius:10px;background:rgba(124,106,247,0.12);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.quest-body{flex:1;min-width:0;}
+.quest-name{font-size:13px;font-weight:500;margin-bottom:3px;}
+.quest-meta{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.quest-xp{font-size:11px;font-weight:600;color:var(--gold);}
+.diff-pill{font-size:10px;padding:2px 6px;border-radius:99px;font-weight:600;}
+.diff-easy{background:rgba(34,197,94,0.15);color:#22c55e;}
+.diff-medium{background:rgba(245,158,11,0.15);color:#f59e0b;}
+.diff-hard{background:rgba(239,68,68,0.15);color:#ef4444;}
+.prog-row{display:flex;align-items:center;gap:6px;}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--accent);border-radius:99px;}
+.prog-lbl{font-size:10px;color:var(--muted);}
+.q-actions{display:flex;flex-direction:column;gap:4px;}
+.q-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent2);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;}
+.q-btn:active{background:rgba(124,106,247,0.2);}
+.q-btn.g{border-color:var(--green);color:var(--green);}
+.q-btn.done{border-color:#333;color:var(--muted);cursor:default;}
+
+/* BOSS */
+.boss-arena{margin:14px;background:var(--surface2);border:1px solid rgba(239,68,68,0.2);border-radius:18px;padding:20px;text-align:center;position:relative;overflow:hidden;}
+.boss-arena::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(239,68,68,0.07),transparent 60%);pointer-events:none;}
+.boss-tag{font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:5px;}
+.boss-name{font-size:20px;font-weight:700;margin-bottom:2px;}
+.boss-sub{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.boss-emoji-big{font-size:68px;line-height:1;margin-bottom:12px;display:block;}
+.boss-hp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.boss-hp-track{height:10px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-bottom:14px;}
+.boss-hp-fill{height:100%;background:linear-gradient(90deg,var(--red),#f97316);border-radius:99px;transition:width 0.5s;}
+.boss-btns{display:flex;gap:8px;justify-content:center;}
+.boss-btn{flex:1;max-width:100px;padding:10px 4px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.boss-btn:active{border-color:var(--accent);}
+.b-xp{font-size:9px;color:var(--gold);}
+.boss-reward-box{margin-top:12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px;font-size:12px;color:var(--gold-light);}
+
+/* BADGES */
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;}
+.badge-card{background:var(--surface2);border-radius:14px;padding:14px;text-align:center;border:1px solid var(--border);transition:all 0.2s;}
+.badge-card.earned{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.05);}
+.badge-card.earned .badge-icon{filter:none;}
+.badge-icon{font-size:30px;margin-bottom:6px;filter:grayscale(1) opacity(0.4);transition:filter 0.3s;}
+.badge-name{font-size:11px;font-weight:600;color:var(--text);}
+.badge-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.badge-earned-label{font-size:9px;color:var(--gold);margin-top:4px;font-weight:600;}
+.badge-pop{animation:badgepop 0.5s cubic-bezier(.34,1.56,.64,1) forwards;}
+
+/* FLASHCARDS */
+.fc-card{margin:14px;background:var(--surface2);border-radius:18px;padding:28px 20px;text-align:center;border:1px solid var(--border);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s;}
+.fc-card:active{transform:scale(0.97);}
+.fc-front{font-size:20px;font-weight:600;color:var(--text);}
+.fc-back{font-size:16px;color:var(--accent2);display:none;}
+.fc-hint{font-size:11px;color:var(--muted);margin-top:10px;}
+.fc-btns{display:flex;gap:10px;margin:0 14px 12px;}
+.fc-btn{flex:1;padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.fc-btn.bad{background:rgba(239,68,68,0.15);color:var(--red);}
+.fc-btn.ok{background:rgba(245,158,11,0.15);color:var(--gold);}
+.fc-btn.good{background:rgba(34,197,94,0.15);color:var(--green);}
+.fc-progress{display:flex;gap:6px;align-items:center;justify-content:center;padding:8px 14px;font-size:12px;color:var(--muted);}
+
+/* PLANNING */
+.plan-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid var(--border);}
+.plan-item:last-child{border-bottom:none;}
+.plan-date{font-size:11px;color:var(--muted);min-width:36px;text-align:center;line-height:1.3;}
+.plan-date-num{font-size:18px;font-weight:700;color:var(--text);display:block;}
+.plan-bar{width:3px;height:36px;border-radius:99px;flex-shrink:0;}
+.plan-info{flex:1;}
+.plan-name{font-size:13px;font-weight:500;}
+.plan-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.plan-days-left{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;}
+.urgent{background:rgba(239,68,68,0.15);color:var(--red);}
+.soon{background:rgba(245,158,11,0.15);color:var(--gold);}
+.ok-time{background:rgba(34,197,94,0.15);color:var(--green);}
+
+/* SKILLS / REWARDS */
+.skill-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid var(--border);}
+.skill-row:last-child{border-bottom:none;}
+.skill-icon-box{width:40px;height:40px;border-radius:12px;background:rgba(124,106,247,0.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.skill-body{flex:1;}
+.skill-name{font-size:13px;font-weight:600;}
+.skill-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.skill-action{font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;border:none;font-family:inherit;}
+.reward-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;}
+.reward-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;}
+.reward-card:active{opacity:0.7;}
+.reward-card.owned{opacity:0.4;}
+.reward-icon{font-size:30px;margin-bottom:5px;}
+.reward-name{font-size:12px;font-weight:600;}
+.reward-cost{font-size:11px;color:var(--gold);margin-top:3px;font-weight:600;}
+
+/* POPUPS */
+.xp-popup{position:fixed;pointer-events:none;font-size:17px;font-weight:700;color:var(--gold);animation:floatup 1s ease-out forwards;z-index:999;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.overlay-box{background:var(--surface);border-radius:20px;padding:28px 24px;text-align:center;width:100%;max-width:340px;animation:badgepop 0.4s cubic-bezier(.34,1.56,.64,1);}
+.overlay-title{font-size:24px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.overlay-sub{font-size:14px;color:var(--muted);}
+.overlay-btn{margin-top:20px;padding:12px 28px;border-radius:12px;border:1px solid var(--accent);background:transparent;color:var(--accent2);font-size:14px;cursor:pointer;font-family:inherit;}
+.install-tip{margin:14px;padding:14px;background:rgba(124,106,247,0.1);border:1px solid rgba(124,106,247,0.2);border-radius:14px;font-size:13px;color:var(--accent2);line-height:1.6;}
+.install-tip strong{display:block;font-size:14px;font-weight:600;margin-bottom:4px;}
+.add-btn-full{width:calc(100% - 28px);margin:0 14px 12px;padding:13px;border-radius:13px;border:1.5px dashed rgba(124,106,247,0.35);background:transparent;color:var(--accent2);font-size:14px;cursor:pointer;font-family:inherit;}
+.add-btn-full:active{background:rgba(124,106,247,0.1);}
+.big-action{width:calc(100%-28px);margin:0 14px 10px;padding:13px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;width:calc(100% - 28px);}
+.big-action:active{opacity:0.8;}
+.empty{padding:20px;text-align:center;font-size:13px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="status-bar"></div>
+  <div class="content" id="content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div class="hrow">
+          <div><div class="page-title">⚔️ StudyQuest</div><div class="page-sub" id="dash-date"></div></div>
+          <div class="coins-badge">💰 <span id="h-coins">0</span></div>
+        </div>
+      </div>
+      <div class="player-strip">
+        <div class="avatar-wrap">
+          <div class="player-avatar" id="p-avatar">🧙</div>
+          <div class="avatar-level" id="p-av-lv">1</div>
+        </div>
+        <div class="player-info">
+          <div class="pname-row"><div class="pname">Étudiant</div></div>
+          <div class="ptitle" id="p-title">Apprenti Érudit</div>
+          <div class="streak-chip" id="streak-chip">🔥 <span id="p-streak">0</span> jours de suite</div>
+          <div class="xp-row">
+            <div class="xp-track"><div class="xp-fill" id="p-xp-bar" style="width:0%"></div></div>
+            <div class="xp-txt" id="p-xp-txt">0/500 XP</div>
+          </div>
+        </div>
+      </div>
+      <div class="section"><div class="section-title">Pomodoro — session rapide</div></div>
+      <div class="pomo-card" id="dash-pomo-mini" onclick="switchTab('pomodoro',document.getElementById('tab-pomodoro'))">
+        <div style="font-size:40px;margin-bottom:8px;" id="dash-pomo-emoji">⏱️</div>
+        <div style="font-size:16px;font-weight:600;color:var(--text);">Lancer une session</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="dash-pomo-sub">25 min focus → +50 XP</div>
+        <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;" id="dash-pomo-dots"></div>
+      </div>
+      <div class="section"><div class="section-title">Quêtes actives</div></div>
+      <div class="card" id="dash-quests"></div>
+      <div class="section"><div class="section-title">Matières</div></div>
+      <div id="dash-subjects"></div>
+      <div class="section"><div class="section-title">Prochain examen</div></div>
+      <div class="card" id="dash-exam"></div>
+    </div>
+
+    <!-- POMODORO -->
+    <div class="view" id="view-pomodoro">
+      <div class="page-header"><div class="hrow"><div><div class="page-title">⏱️ Pomodoro</div><div class="page-sub">Focus — Pause — Répète</div></div></div></div>
+      <div class="pomo-card">
+        <div class="pomo-mode-tabs">
+          <div class="pomo-tab active" id="pt-focus" onclick="setPomoMode('focus',this)">Focus 25</div>
+          <div class="pomo-tab" id="pt-short" onclick="setPomoMode('short',this)">Pause 5</div>
+          <div class="pomo-tab" id="pt-long" onclick="setPomoMode('long',this)">Longue 15</div>
+        </div>
+        <div class="pomo-ring">
+          <svg class="pomo-svg" width="160" height="160" viewBox="0 0 160 160">
+            <circle class="pomo-track" cx="80" cy="80" r="70"/>
+            <circle class="pomo-prog" id="pomo-ring" cx="80" cy="80" r="70" stroke-dashoffset="0"/>
+          </svg>
+          <div class="pomo-time">
+            <div class="pomo-digits" id="pomo-digits">25:00</div>
+            <div class="pomo-sublabel" id="pomo-sublabel">Prêt !</div>
+          </div>
+        </div>
+        <div class="pomo-btns">
+          <button class="pomo-btn primary" id="pomo-start-btn" onclick="togglePomo()">▶ Démarrer</button>
+          <button class="pomo-btn secondary" onclick="resetPomo()">↺ Reset</button>
+        </div>
+        <select class="pomo-subject-sel" id="pomo-subject-sel"></select>
+        <div class="pomo-sessions" id="pomo-sessions"></div>
+        <div class="pomo-stats-row">
+          <div class="pomo-stat"><div class="pomo-stat-val" id="ps-today">0</div><div class="pomo-stat-lbl">Sessions aujourd'hui</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-val" id="ps-total">0</div><div class="pomo-stat-lbl">Total sessions</div></div>
+          <div class="pomo-stat"><div class="pomo-stat-val" id="ps-xp">0</div><div class="pomo-stat-lbl">XP gagnés</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUESTS -->
+    <div class="view" id="view-quests">
+      <div class="page-header">
+        <div class="hrow">
+          <div><div class="page-title">📜 Quêtes</div></div>
+          <button onclick="addQuest()" style="padding:7px 14px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent2);font-size:13px;cursor:pointer;font-family:inherit;">+ Nouveau</button>
+        </div>
+      </div>
+      <div class="section"><div class="section-title">En cours</div></div>
+      <div class="card" id="quest-active"></div>
+      <div class="section"><div class="section-title">Terminées</div></div>
+      <div class="card" id="quest-done"></div>
+    </div>
+
+    <!-- BOSS -->
+    <div class="view" id="view-boss">
+      <div class="page-header"><div class="hrow"><div><div class="page-title">💀 Boss Fight</div><div class="page-sub">Affronte les examens</div></div></div></div>
+      <div class="boss-arena" id="boss-arena"></div>
+      <div class="section"><div class="section-title">File d'attente</div></div>
+      <div class="card" id="boss-queue"></div>
+      <div class="section"><div class="section-title">Boss vaincus</div></div>
+      <div class="card" id="boss-done"></div>
+      <button class="add-btn-full" onclick="addBoss()">+ Nouvel examen</button>
+    </div>
+
+    <!-- FLASHCARDS -->
+    <div class="view" id="view-flashcards">
+      <div class="page-header">
+        <div class="hrow">
+          <div><div class="page-title">🗂️ Flashcards</div></div>
+          <button onclick="addFlashcard()" style="padding:7px 14px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent2);font-size:13px;cursor:pointer;font-family:inherit;">+ Carte</button>
+        </div>
+      </div>
+      <div id="fc-area"></div>
+      <div class="section" style="margin-top:4px;"><div class="section-title">Toutes mes cartes</div></div>
+      <div class="card" id="fc-list"></div>
+    </div>
+
+    <!-- PROGRESSION -->
+    <div class="view" id="view-progress">
+      <div class="page-header"><div class="hrow"><div><div class="page-title">🌟 Progression</div></div><div style="font-size:12px;color:var(--accent2);">⭐ <span id="pts-left">0</span> pts</div></div></div>
+      <div class="section"><div class="section-title">Badges & succès</div></div>
+      <div class="card"><div class="badge-grid" id="badge-grid"></div></div>
+      <div class="section"><div class="section-title">Compétences</div></div>
+      <div class="card" id="skills-list"></div>
+      <div class="section"><div class="section-title">Récompenses — 💰 <span id="coins-disp">0</span></div></div>
+      <div class="card"><div class="reward-grid" id="reward-grid"></div></div>
+      <div class="section"><div class="section-title">Planning des examens</div></div>
+      <div class="card" id="planning-list"></div>
+      <button class="add-btn-full" onclick="addExam()">+ Ajouter un examen</button>
+      <div style="height:10px;"></div>
+    </div>
+
+  </div>
+
+  <!-- ONBOARDING -->
+  <div class="onboarding" id="onboarding">
+
+    <!-- STEP 1: Welcome -->
+    <div class="ob-step active" id="ob-step-1">
+      <div class="ob-hero">
+        <span class="ob-emoji">⚔️</span>
+        <div class="ob-hero-title">Bienvenue sur StudyQuest</div>
+        <div class="ob-hero-sub">Transforme tes révisions en aventure RPG.<br>Gagne de l'XP, vaincs tes examens, monte de niveau.</div>
+      </div>
+      <div class="ob-body">
+        <div class="ob-step-title">Crée ton personnage</div>
+        <div class="ob-step-sub">Comment veux-tu t'appeler ?</div>
+        <div class="ob-field">
+          <div class="ob-label">Ton prénom</div>
+          <input class="ob-input" id="ob-name" placeholder="Ex: Alex" maxlength="20"/>
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">Choisis ton avatar</div>
+          <div class="ob-avatar-grid" id="ob-avatar-grid"></div>
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">Niveau d'études</div>
+          <select class="ob-input" id="ob-level">
+            <option value="Collège">Collège</option>
+            <option value="Lycée" selected>Lycée</option>
+            <option value="BTS / IUT">BTS / IUT</option>
+            <option value="Licence">Licence (L1/L2/L3)</option>
+            <option value="Master">Master</option>
+            <option value="Prépa">Classes Prépa</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-progress" id="ob-prog-1"></div>
+        <button class="ob-next-btn" onclick="obNext(1)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Matières -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-hero" style="padding-top:calc(env(safe-area-inset-top,20px) + 28px);padding-bottom:24px;">
+        <span class="ob-emoji" style="font-size:52px;">📚</span>
+        <div class="ob-hero-title" style="font-size:22px;">Tes matières</div>
+        <div class="ob-hero-sub" style="font-size:13px;">Ajoute les matières que tu révises.<br>Tu pourras en ajouter d'autres plus tard.</div>
+      </div>
+      <div class="ob-body">
+        <div class="ob-subjects-list" id="ob-subjects-list"></div>
+        <button class="ob-add-subject" onclick="obAddSubject()">+ Ajouter une matière</button>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-progress" id="ob-prog-2"></div>
+        <button class="ob-next-btn" onclick="obNext(2)">Continuer →</button>
+        <button class="ob-skip" onclick="obNext(2)">Passer cette étape</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Examens -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-hero" style="padding-top:calc(env(safe-area-inset-top,20px) + 28px);padding-bottom:24px;">
+        <span class="ob-emoji" style="font-size:52px;">📅</span>
+        <div class="ob-hero-title" style="font-size:22px;">Tes prochains examens</div>
+        <div class="ob-hero-sub" style="font-size:13px;">Entre les dates de tes exams pour que l'app te prépare un planning.</div>
+      </div>
+      <div class="ob-body">
+        <div class="ob-exams-list" id="ob-exams-list"></div>
+        <button class="ob-add-exam" onclick="obAddExam()">+ Ajouter un examen</button>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-progress" id="ob-prog-3"></div>
+        <button class="ob-next-btn" onclick="obNext(3)">Continuer →</button>
+        <button class="ob-skip" onclick="obNext(3)">Passer cette étape</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Récompenses -->
+    <div class="ob-step" id="ob-step-4">
+      <div class="ob-hero" style="padding-top:calc(env(safe-area-inset-top,20px) + 28px);padding-bottom:24px;">
+        <span class="ob-emoji" style="font-size:52px;">🏆</span>
+        <div class="ob-hero-title" style="font-size:22px;">Tes récompenses</div>
+        <div class="ob-hero-sub" style="font-size:13px;">Définis ce qui te motive. Tu débloques ces récompenses en gagnant des pièces.</div>
+      </div>
+      <div class="ob-body">
+        <div class="ob-rewards-list" id="ob-rewards-list"></div>
+        <button class="ob-add-subject" onclick="obAddReward()" style="margin-top:8px;border-color:rgba(245,158,11,0.3);color:var(--gold);">+ Ajouter une récompense</button>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-progress" id="ob-prog-4"></div>
+        <button class="ob-next-btn" onclick="obNext(4)">Continuer →</button>
+        <button class="ob-skip" onclick="obNext(4)">Passer cette étape</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Ready -->
+    <div class="ob-step" id="ob-step-5">
+      <div class="ob-hero" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;">
+        <span class="ob-emoji" style="font-size:80px;">🎉</span>
+        <div class="ob-hero-title" style="font-size:26px;">Tout est prêt, <span id="ob-ready-name">Héros</span> !</div>
+        <div class="ob-hero-sub">Ton aventure commence maintenant.<br>Révise, gagne de l'XP, vaincs tes examens.</div>
+      </div>
+      <div class="ob-footer" style="padding-bottom:20px;">
+        <button class="ob-next-btn" onclick="obFinish()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));">⚔️ Commencer l'aventure !</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active" id="tab-dashboard" onclick="switchTab('dashboard',this)"><div class="tab-icon">🗺️</div><div class="tab-label" style="color:var(--accent2);">Accueil</div></div>
+    <div class="tab-item" id="tab-pomodoro" onclick="switchTab('pomodoro',this)"><div class="tab-icon">⏱️</div><div class="tab-label">Pomodoro</div></div>
+    <div class="tab-item" id="tab-quests" onclick="switchTab('quests',this)"><div class="tab-icon">📜</div><div class="tab-label">Quêtes</div></div>
+    <div class="tab-item" id="tab-boss" onclick="switchTab('boss',this)"><div class="tab-icon">💀</div><div class="tab-label">Boss</div></div>
+    <div class="tab-item" id="tab-flashcards" onclick="switchTab('flashcards',this)"><div class="tab-icon">🗂️</div><div class="tab-label">Fiches</div></div>
+    <div class="tab-item" id="tab-progress" onclick="switchTab('progress',this)"><div class="tab-icon">🌟</div><div class="tab-label">Progrès</div></div>
+  </div>
+</div>
+
+<script>
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ===== DATA ===== */
+const TITLES=['Apprenti Érudit','Lecteur Assidu','Chercheur','Savant','Maître Érudit','Grand Sage'];
+const AVATARS=['🧙','🧝','🧛','🧜','🦸','🧚'];
+const POMO_MODES={focus:{label:'Focus 25',mins:25,xp:50},short:{label:'Pause 5',mins:5,xp:0},long:{label:'Longue 15',mins:15,xp:10}};
+
+function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;}}
+function save(){
+  localStorage.setItem('sq3_player',JSON.stringify(player));
+  localStorage.setItem('sq3_quests',JSON.stringify(quests));
+  localStorage.setItem('sq3_subjects',JSON.stringify(subjects));
+  localStorage.setItem('sq3_bosses',JSON.stringify(bosses));
+  localStorage.setItem('sq3_skills',JSON.stringify(skills));
+  localStorage.setItem('sq3_rewards',JSON.stringify(rewards));
+  localStorage.setItem('sq3_badges',JSON.stringify(badges));
+  localStorage.setItem('sq3_flashcards',JSON.stringify(flashcards));
+  localStorage.setItem('sq3_exams',JSON.stringify(exams));
+  localStorage.setItem('sq3_pomo',JSON.stringify(pomoStats));
+}
+
+let player=load('sq3_player',{xp:120,level:1,coins:45,streak:3,totalXp:120,lastActive:null,sessionsToday:0,totalSessions:0,totalXpFromPomo:0});
+let quests=load('sq3_quests',[
+  {id:1,name:'Réviser Algèbre — ch.3',icon:'📐',xp:80,coins:15,diff:'medium',progress:2,total:5,done:false},
+  {id:2,name:'Lire 20 pages d\'histoire',icon:'📖',xp:50,coins:10,diff:'easy',progress:20,total:20,done:true},
+  {id:3,name:'Vocabulaire anglais',icon:'🗣️',xp:60,coins:12,diff:'easy',progress:18,total:30,done:false},
+  {id:4,name:'Exercices de physique',icon:'⚗️',xp:100,coins:20,diff:'hard',progress:0,total:10,done:false},
+]);
+let subjects=load('sq3_subjects',[
+  {id:1,name:'Mathématiques',icon:'📐',color:'#3b82f6',xp:340,level:4},
+  {id:2,name:'Histoire / Géo',icon:'🗺️',color:'#f59e0b',xp:180,level:2},
+  {id:3,name:'Langues',icon:'🗣️',color:'#22c55e',xp:220,level:3},
+  {id:4,name:'Sciences',icon:'⚗️',color:'#a78bfa',xp:90,level:1},
+]);
+let bosses=load('sq3_bosses',[
+  {id:1,name:'Examen de Maths',sub:'Algèbre & Géométrie',icon:'💀',hp:100,maxHp:100,active:true,defeated:false,reward:'150 XP + 50 pièces'},
+  {id:2,name:'Contrôle Histoire',sub:'La Révolution Française',icon:'⚔️',hp:80,maxHp:80,active:false,defeated:false,reward:'100 XP + 30 pièces'},
+]);
+let skills=load('sq3_skills',[
+  {id:1,name:'Mémorisation rapide',icon:'⚡',desc:'Retiens 20% plus vite',cost:1,unlocked:true,req:null},
+  {id:2,name:'Focus total',icon:'🎯',desc:'Sessions sans distraction',cost:1,unlocked:true,req:null},
+  {id:3,name:'Lecture active',icon:'📖',desc:'Prends des notes efficacement',cost:2,unlocked:false,req:1},
+  {id:4,name:'Mind Map',icon:'🧩',desc:'Visualise les concepts',cost:2,unlocked:false,req:1},
+  {id:5,name:'Répétition espacée',icon:'🔄',desc:'Optimise tes révisions',cost:3,unlocked:false,req:3},
+  {id:6,name:'Mode Examen',icon:'📝',desc:'Simule les conditions d\'examen',cost:3,unlocked:false,req:2},
+]);
+let rewards=load('sq3_rewards',[
+  {id:1,name:'Pause Netflix',icon:'📺',cost:30,owned:false},
+  {id:2,name:'Snack favori',icon:'🍕',cost:20,owned:false},
+  {id:3,name:'Jeu vidéo 2h',icon:'🎮',cost:50,owned:false},
+  {id:4,name:'Sortie entre amis',icon:'🎉',cost:80,owned:false},
+  {id:5,name:'Journée off',icon:'🌴',cost:150,owned:false},
+  {id:6,name:'Ciné',icon:'🎬',cost:40,owned:false},
+]);
+let badges=load('sq3_badges',[
+  {id:1,name:'Premier Pas',icon:'👣',desc:'Complète ta 1ère quête',earned:false,check:()=>quests.filter(q=>q.done).length>=1},
+  {id:2,name:'Pomodoro Rookie',icon:'🍅',desc:'Complète 5 sessions Pomodoro',earned:false,check:()=>player.totalSessions>=5},
+  {id:3,name:'Chasseur de Boss',icon:'⚔️',desc:'Vaincs ton premier boss',earned:false,check:()=>bosses.some(b=>b.defeated)},
+  {id:4,name:'Série de feu',icon:'🔥',desc:'3 jours de streak',earned:false,check:()=>player.streak>=3},
+  {id:5,name:'Niveau 5',icon:'⭐',desc:'Atteins le niveau 5',earned:false,check:()=>player.level>=5},
+  {id:6,name:'Maître des fiches',icon:'🗂️',desc:'Crée 10 flashcards',earned:false,check:()=>flashcards.length>=10},
+  {id:7,name:'Marathonien',icon:'🏃',desc:'10 sessions Pomodoro',earned:false,check:()=>player.totalSessions>=10},
+  {id:8,name:'Érudit',icon:'🎓',desc:'500 XP total',earned:false,check:()=>player.totalXp>=500},
+  {id:9,name:'Invincible',icon:'🛡️',desc:'Vaincs 3 boss',earned:false,check:()=>bosses.filter(b=>b.defeated).length>=3},
+]);
+let flashcards=load('sq3_flashcards',[
+  {id:1,front:'Qu\'est-ce que la dérivée ?',back:'Taux de variation instantané d\'une fonction',subject:1,score:0},
+  {id:2,front:'Date de la Révolution Française',back:'1789',subject:2,score:0},
+  {id:3,front:'To procrastinate',back:'Procrastiner, remettre à plus tard',subject:3,score:0},
+]);
+let exams=load('sq3_exams',[
+  {id:1,name:'Examen de Maths',date:'2026-04-15',subject:1,color:'#3b82f6'},
+  {id:2,name:'Contrôle Histoire',date:'2026-04-22',subject:2,color:'#f59e0b'},
+]);
+let pomoStats=load('sq3_pomo',{sessionsToday:0,total:0,totalXp:0,lastDate:null});
+
+/* ===== POMODORO ===== */
+let pomoMode='focus';let pomoRunning=false;let pomoTimer=null;
+let pomoTotal=25*60;let pomoLeft=25*60;let pomoSession=0;
+
+function setPomoMode(mode,el){
+  if(pomoRunning)return;
+  pomoMode=mode;
+  document.querySelectorAll('.pomo-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  pomoTotal=POMO_MODES[mode].mins*60;
+  pomoLeft=pomoTotal;
+  updatePomoDisplay();
+}
+
+function togglePomo(){
+  if(pomoRunning){
+    clearInterval(pomoTimer);pomoRunning=false;
+    document.getElementById('pomo-start-btn').textContent='▶ Reprendre';
+    document.getElementById('pomo-sublabel').textContent='En pause';
+  } else {
+    pomoRunning=true;
+    document.getElementById('pomo-start-btn').textContent='⏸ Pause';
+    document.getElementById('pomo-sublabel').textContent=pomoMode==='focus'?'En cours...':'Pause en cours...';
+    pomoTimer=setInterval(()=>{
+      pomoLeft--;
+      updatePomoDisplay();
+      if(pomoLeft<=0){
+        clearInterval(pomoTimer);pomoRunning=false;
+        pomoComplete();
+      }
+    },1000);
+  }
+}
+
+function resetPomo(){
+  clearInterval(pomoTimer);pomoRunning=false;
+  pomoLeft=pomoTotal;
+  document.getElementById('pomo-start-btn').textContent='▶ Démarrer';
+  document.getElementById('pomo-sublabel').textContent='Prêt !';
+  updatePomoDisplay();
+}
+
+function pomoComplete(){
+  const mode=POMO_MODES[pomoMode];
+  if(pomoMode==='focus'){
+    pomoSession=Math.min(4,pomoSession+1);
+    const today=new Date().toDateString();
+    if(pomoStats.lastDate!==today){pomoStats.sessionsToday=0;pomoStats.lastDate=today;}
+    pomoStats.sessionsToday++;pomoStats.total++;pomoStats.totalXp+=mode.xp;
+    gainXP(mode.xp,document.getElementById('pomo-digits'));
+    save();updatePomoStats();checkBadges();
+    showOverlay('🍅 Session terminée !',`+${mode.xp} XP gagnés ! Fais une pause méritée.`);
+  } else {
+    showOverlay('☕ Pause terminée !','C\'est reparti !');
+  }
+  renderPomoDots();
+  document.getElementById('pomo-start-btn').textContent='▶ Démarrer';
+  document.getElementById('pomo-sublabel').textContent='Terminé !';
+  pomoLeft=pomoTotal;updatePomoDisplay();
+}
+
+function updatePomoDisplay(){
+  const m=Math.floor(pomoLeft/60),s=pomoLeft%60;
+  document.getElementById('pomo-digits').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const pct=1-(pomoLeft/pomoTotal);
+  const circ=440;
+  document.getElementById('pomo-ring').style.strokeDashoffset=circ*pct;
+}
+
+function renderPomoDots(){
+  document.getElementById('pomo-sessions').innerHTML=Array.from({length:4},(_,i)=>
+    `<div class="pomo-dot ${i<pomoSession?'done':''}"></div>`).join('');
+  const dashDots=document.getElementById('dash-pomo-dots');
+  if(dashDots)dashDots.innerHTML=Array.from({length:4},(_,i)=>
+    `<div class="pomo-dot ${i<pomoSession?'done':''}"></div>`).join('');
+}
+
+function updatePomoStats(){
+  document.getElementById('ps-today').textContent=pomoStats.sessionsToday;
+  document.getElementById('ps-total').textContent=pomoStats.total;
+  document.getElementById('ps-xp').textContent=pomoStats.totalXp;
+}
+
+function updatePomoSubjectSel(){
+  const sel=document.getElementById('pomo-subject-sel');
+  if(!sel)return;
+  sel.innerHTML=subjects.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('');
+}
+
+/* ===== PLAYER ===== */
+function xpForLevel(l){return l*500;}
+function titleFor(l){return TITLES[Math.min(l-1,TITLES.length-1)];}
+function avatarFor(l){return AVATARS[Math.min(Math.floor((l-1)/2),AVATARS.length-1)];}
+function skillPtsAvail(){return Math.max(0,player.level-skills.filter(s=>s.unlocked).length+2);}
+
+function gainXP(amount,el){
+  player.xp+=amount;player.totalXp+=amount;player.coins+=Math.round(amount/5);
+  const needed=xpForLevel(player.level);
+  if(player.xp>=needed){player.xp-=needed;player.level++;showOverlay('⬆ NIVEAU '+player.level+' !',titleFor(player.level));}
+  if(el){
+    const pop=document.createElement('div');pop.className='xp-popup';pop.textContent='+'+amount+' XP';
+    const r=el.getBoundingClientRect();pop.style.left=(r.left+r.width/2-20)+'px';pop.style.top=(r.top+window.scrollY-10)+'px';
+    document.body.appendChild(pop);setTimeout(()=>pop.remove(),1000);
+  }
+  updateSidebar();save();
+}
+
+function updateStreak(){
+  const today=new Date().toDateString();
+  if(player.lastActive===today)return;
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  if(player.lastActive===yesterday)player.streak++;
+  else if(player.lastActive!==today)player.streak=1;
+  player.lastActive=today;
+  save();
+}
+
+function updateSidebar(){
+  const needed=xpForLevel(player.level);
+  document.getElementById('p-av-lv').textContent=player.level;
+  document.getElementById('p-avatar').textContent=avatarFor(player.level);
+  document.getElementById('p-title').textContent=titleFor(player.level);
+  document.getElementById('p-streak').textContent=player.streak;
+  document.getElementById('p-xp-bar').style.width=Math.min(100,Math.round(player.xp/needed*100))+'%';
+  document.getElementById('p-xp-txt').textContent=player.xp+'/'+needed+' XP';
+  document.getElementById('h-coins').textContent=player.coins;
+  document.getElementById('pts-left').textContent=skillPtsAvail();
+  document.getElementById('coins-disp').textContent=player.coins;
+}
+
+/* ===== BADGES ===== */
+function checkBadges(){
+  let newBadge=false;
+  badges.forEach(b=>{
+    if(!b.earned&&b.check()){b.earned=true;newBadge=true;showBadgeUnlock(b);}
+  });
+  if(newBadge)save();
+}
+
+function showBadgeUnlock(b){
+  showOverlay('🏅 Badge débloqué !',b.icon+' '+b.name+'\n'+b.desc);
+}
+
+/* ===== NAV ===== */
+function switchTab(v,el){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(x=>{x.classList.remove('active');x.querySelector('.tab-label').style.color='';});
+  el.classList.add('active');el.querySelector('.tab-label').style.color='var(--accent2)';
+  document.getElementById('content').scrollTop=0;
+  if(v==='dashboard')renderDashboard();
+  if(v==='quests')renderQuests();
+  if(v==='boss')renderBoss();
+  if(v==='flashcards')renderFlashcards();
+  if(v==='progress')renderProgress();
+  if(v==='pomodoro'){updatePomoSubjectSel();renderPomoDots();updatePomoStats();}
+}
+
+/* ===== OVERLAY ===== */
+function showOverlay(title,sub){
+  const el=document.createElement('div');el.className='overlay';
+  el.innerHTML=`<div class="overlay-box"><div class="overlay-title">${title}</div><div class="overlay-sub">${sub}</div><button class="overlay-btn" onclick="this.closest('.overlay').remove()">Continuer</button></div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),4000);
+}
+
+/* ===== DASHBOARD ===== */
+function renderDashboard(){
+  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const active=quests.filter(q=>!q.done).slice(0,2);
+  document.getElementById('dash-quests').innerHTML=active.length
+    ?active.map(q=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:0.5px solid var(--border);">
+        <div style="font-size:18px;">${q.icon}</div>
+        <div style="flex:1;font-size:13px;">${q.name}</div>
+        <div style="font-size:11px;color:var(--gold);font-weight:600;">+${q.xp}XP</div>
+      </div>`).join('')
+    :'<div class="empty">Toutes les quêtes terminées 🎉</div>';
+
+  document.getElementById('dash-subjects').innerHTML=subjects.map(s=>{
+    const needed=s.level*200;const pct=Math.min(100,Math.round((s.xp%needed)/needed*100));
+    return `<div style="display:flex;align-items:center;gap:10px;margin:0 14px 8px;background:var(--surface2);border-radius:12px;padding:10px 12px;cursor:pointer;border:1px solid var(--border);" onclick="tapSubject(${s.id},event)">
+      <div style="font-size:20px;">${s.icon}</div>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>${s.name}</span><span style="color:var(--muted);">Niv.${s.level}</span></div>
+        <div style="height:4px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${s.color};border-radius:99px;"></div></div>
+      </div>
+    </div>`;}).join('');
+
+  const nextExam=exams.sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+  if(nextExam){
+    const days=Math.ceil((new Date(nextExam.date)-new Date())/(1000*60*60*24));
+    const cls=days<=3?'urgent':days<=7?'soon':'ok-time';
+    document.getElementById('dash-exam').innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:14px;">
+      <div style="font-size:28px;">📅</div>
+      <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${nextExam.name}</div><div style="font-size:11px;color:var(--muted);">${new Date(nextExam.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}</div></div>
+      <div class="plan-days-left ${cls}">${days}j</div>
+    </div>`;
+  } else document.getElementById('dash-exam').innerHTML='<div class="empty">Aucun examen planifié</div>';
+  renderPomoDots();
+}
+
+function tapSubject(id,e){
+  const s=subjects.find(x=>x.id===id);if(!s)return;
+  const gain=20;s.xp+=gain;
+  const needed=s.level*200;if(s.xp>=needed){s.xp-=needed;s.level++;}
+  gainXP(gain,e.currentTarget);save();renderDashboard();checkBadges();
+}
+
+/* ===== QUESTS ===== */
+function renderQuests(){
+  const active=quests.filter(q=>!q.done);
+  const done=quests.filter(q=>q.done);
+  document.getElementById('quest-active').innerHTML=active.length?active.map(questHTML).join(''):'<div class="empty">Aucune quête active</div>';
+  document.getElementById('quest-done').innerHTML=done.length?done.map(questHTML).join(''):'<div class="empty">Pas encore de quête terminée</div>';
+}
+function questHTML(q){
+  const pct=Math.round(q.progress/q.total*100);
+  const dc=q.diff==='easy'?'easy':q.diff==='hard'?'hard':'medium';
+  const dl=q.diff==='easy'?'Facile':q.diff==='hard'?'Difficile':'Moyen';
+  return `<div class="quest-row">
+    <div class="quest-icon-box">${q.icon}</div>
+    <div class="quest-body">
+      <div class="quest-name">${q.name}</div>
+      <div class="quest-meta"><div class="quest-xp">+${q.xp} XP</div><div class="diff-pill diff-${dc}">${dl}</div></div>
+      <div class="prog-row"><div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-lbl">${q.progress}/${q.total}</div></div>
+    </div>
+    <div class="q-actions">
+      ${q.done?'<button class="q-btn done">✓ Fait</button>':`<button class="q-btn" onclick="progQuest(${q.id},event)">+1</button><button class="q-btn g" onclick="doneQuest(${q.id},event)">✓</button>`}
+    </div>
+  </div>`;
+}
+function progQuest(id,e){const q=quests.find(x=>x.id===id);if(!q||q.done)return;q.progress=Math.min(q.total,q.progress+1);if(q.progress>=q.total)doneQuest(id,e);else{save();renderQuests();renderDashboard();}}
+function doneQuest(id,e){const q=quests.find(x=>x.id===id);if(!q||q.done)return;q.done=true;q.progress=q.total;gainXP(q.xp,e.currentTarget);save();renderQuests();renderDashboard();checkBadges();}
+function addQuest(){
+  const name=prompt('Nom de la quête :');if(!name?.trim())return;
+  const xp=parseInt(prompt('XP à gagner :')||'50');
+  quests.push({id:Date.now(),name:name.trim(),icon:'📋',xp:isNaN(xp)?50:xp,coins:10,diff:'medium',progress:0,total:1,done:false});
+  save();renderQuests();
+}
+
+/* ===== BOSS ===== */
+function renderBoss(){
+  const b=bosses.find(x=>x.active&&!x.defeated)||bosses[0];
+  if(!b){document.getElementById('boss-arena').innerHTML='<div class="empty" style="padding:30px;">Aucun boss disponible</div>';return;}
+  const pct=Math.round(b.hp/b.maxHp*100);
+  document.getElementById('boss-arena').innerHTML=`
+    <div class="boss-tag">⚠ BOSS FIGHT</div>
+    <div class="boss-name">${b.name}</div><div class="boss-sub">${b.sub}</div>
+    <div class="boss-emoji-big" id="b-emoji">${b.icon}</div>
+    <div class="boss-hp-label"><span>Points de vie</span><span>${b.hp}/${b.maxHp}</span></div>
+    <div class="boss-hp-track"><div class="boss-hp-fill" id="b-hp" style="width:${pct}%"></div></div>
+    ${b.defeated?'<div style="font-size:16px;font-weight:700;color:var(--green);">🏆 Boss Vaincu !</div>':`
+    <div class="boss-btns">
+      <button class="boss-btn" onclick="atk(${b.id},10,event)">📖 Réviser<span class="b-xp">-10HP +20XP</span></button>
+      <button class="boss-btn" onclick="atk(${b.id},25,event)">📝 Exercices<span class="b-xp">-25HP +40XP</span></button>
+      <button class="boss-btn" onclick="atk(${b.id},40,event)">⚔️ Fiche<span class="b-xp">-40HP +70XP</span></button>
+    </div>
+    <div class="boss-reward-box">🎁 ${b.reward}</div>`}`;
+  document.getElementById('boss-queue').innerHTML=bosses.filter(x=>!x.defeated).map(x=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:0.5px solid var(--border);">
+      <div style="font-size:20px;">${x.icon}</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:500;">${x.name}</div><div style="font-size:11px;color:var(--muted);">${x.sub}</div></div>
+      <div style="font-size:11px;color:var(--red);">${x.hp}/${x.maxHp}HP</div>
+    </div>`).join('')||'<div class="empty">Aucun boss</div>';
+  document.getElementById('boss-done').innerHTML=bosses.filter(x=>x.defeated).map(x=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:0.5px solid var(--border);">
+      <div style="font-size:20px;">${x.icon}</div>
+      <div style="flex:1;font-size:13px;color:var(--muted);">${x.name}</div>
+      <div style="font-size:11px;color:var(--green);font-weight:600;">✓ Vaincu</div>
+    </div>`).join('')||'<div class="empty">Pas encore de boss vaincu</div>';
+}
+function atk(id,dmg,e){
+  const b=bosses.find(x=>x.id===id);if(!b||b.defeated)return;
+  b.hp=Math.max(0,b.hp-dmg);
+  const xg=dmg===10?20:dmg===25?40:70;
+  gainXP(xg,e.currentTarget);
+  const em=document.getElementById('b-emoji');
+  if(em){em.style.animation='boss-flash 0.4s';setTimeout(()=>em.style.animation='',400);}
+  const hp=document.getElementById('b-hp');if(hp)hp.style.width=Math.round(b.hp/b.maxHp*100)+'%';
+  if(b.hp<=0){b.defeated=true;player.coins+=50;save();checkBadges();showOverlay('🏆 Boss Vaincu !','Tu gagnes 50 pièces bonus !');}
+  else save();
+  renderBoss();renderDashboard();
+}
+function addBoss(){
+  const name=prompt('Nom de l\'examen :');if(!name?.trim())return;
+  const hp=parseInt(prompt('Points de vie (ex: 100) :')||'100');
+  bosses.push({id:Date.now(),name:name.trim(),sub:'Examen personnalisé',icon:'💀',hp:isNaN(hp)?100:hp,maxHp:isNaN(hp)?100:hp,active:true,defeated:false,reward:'XP + pièces'});
+  save();renderBoss();
+}
+
+/* ===== FLASHCARDS ===== */
+let fcIndex=0;let fcShowing=false;let fcDeck=[];
+
+function renderFlashcards(){
+  fcDeck=[...flashcards].sort(()=>Math.random()-0.5);
+  fcIndex=0;fcShowing=false;
+  showFC();
+  document.getElementById('fc-list').innerHTML=flashcards.length
+    ?flashcards.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:0.5px solid var(--border);">
+        <div style="flex:1;"><div style="font-size:13px;font-weight:500;">${f.front}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${f.back}</div></div>
+        <div style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,0.15);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;" onclick="deleteFC(${f.id})">✕</div>
+      </div>`).join('')
+    :'<div class="empty">Aucune carte — ajoutes-en une !</div>';
+}
+
+function showFC(){
+  const area=document.getElementById('fc-area');
+  if(!fcDeck.length){area.innerHTML='<div class="empty" style="padding:30px;">Aucune flashcard. Ajoute-en une !</div>';return;}
+  if(fcIndex>=fcDeck.length){
+    area.innerHTML=`<div class="fc-card"><div class="fc-front">🎉 Série terminée !</div><div class="fc-hint">${fcDeck.length} cartes révisées</div></div>
+    <div class="fc-btns"><button class="fc-btn good" onclick="renderFlashcards()">↺ Recommencer</button></div>`;
+    return;
+  }
+  const f=fcDeck[fcIndex];
+  area.innerHTML=`
+    <div class="fc-progress" id="fc-prog">${fcIndex+1} / ${fcDeck.length}</div>
+    <div class="fc-card" id="fc-card" onclick="flipFC()">
+      <div class="fc-front" id="fc-front">${f.front}</div>
+      <div class="fc-back" id="fc-back">${f.back}</div>
+      <div class="fc-hint" id="fc-hint">Touche pour révéler</div>
+    </div>
+    <div class="fc-btns" id="fc-btns" style="display:none;">
+      <button class="fc-btn bad" onclick="rateFC(0)">😕 Difficile</button>
+      <button class="fc-btn ok" onclick="rateFC(1)">😐 Ok</button>
+      <button class="fc-btn good" onclick="rateFC(2)">😊 Facile</button>
+    </div>`;
+}
+
+function flipFC(){
+  fcShowing=!fcShowing;
+  document.getElementById('fc-front').style.display=fcShowing?'none':'block';
+  document.getElementById('fc-back').style.display=fcShowing?'block':'none';
+  document.getElementById('fc-hint').style.display=fcShowing?'none':'block';
+  document.getElementById('fc-btns').style.display=fcShowing?'flex':'none';
+}
+
+function rateFC(score){
+  if(score===2)gainXP(5,document.getElementById('fc-card'));
+  fcIndex++;fcShowing=false;showFC();
+}
+
+function addFlashcard(){
+  const front=prompt('Question (recto) :');if(!front?.trim())return;
+  const back=prompt('Réponse (verso) :');if(!back?.trim())return;
+  flashcards.push({id:Date.now(),front:front.trim(),back:back.trim(),subject:1,score:0});
+  save();renderFlashcards();checkBadges();
+}
+function deleteFC(id){if(confirm('Supprimer cette carte ?')){flashcards=flashcards.filter(f=>f.id!==id);save();renderFlashcards();}}
+
+/* ===== ONBOARDING ===== */
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;flex-direction:column;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px);}
+.ob-step{display:none;flex-direction:column;min-height:100%;padding:0 0 20px;}
+.ob-step.active{display:flex;}
+.ob-hero{background:linear-gradient(160deg,#1a1e35 0%,#0d0f1a 100%);padding:calc(env(safe-area-inset-top,20px) + 40px) 24px 40px;text-align:center;position:relative;overflow:hidden;}
+.ob-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,rgba(124,106,247,0.15),transparent 60%);pointer-events:none;}
+.ob-emoji{font-size:72px;display:block;margin-bottom:16px;animation:glow 3s infinite;}
+.ob-hero-title{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.5px;margin-bottom:8px;}
+.ob-hero-sub{font-size:15px;color:var(--muted);line-height:1.6;}
+.ob-body{flex:1;padding:24px 18px 0;}
+.ob-step-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.ob-step-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+.ob-field{margin-bottom:14px;}
+.ob-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.ob-input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:border-color 0.15s;}
+.ob-input:focus{border-color:var(--accent);}
+.ob-input option{background:var(--surface2);}
+.ob-subjects-list{display:flex;flex-direction:column;gap:8px;}
+.ob-subject-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:11px 12px;border:1px solid var(--border);}
+.ob-subj-icon{font-size:22px;}
+.ob-subj-name{flex:1;border:none;background:transparent;font-size:14px;color:var(--text);font-family:inherit;outline:none;}
+.ob-subj-del{width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,0.12);color:var(--red);border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ob-add-subject{width:100%;padding:11px;border-radius:12px;border:1.5px dashed rgba(124,106,247,0.3);background:transparent;color:var(--accent2);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;}
+.ob-add-subject:active{background:rgba(124,106,247,0.08);}
+.ob-exams-list{display:flex;flex-direction:column;gap:8px;}
+.ob-exam-row{background:var(--surface2);border-radius:12px;padding:12px;border:1px solid var(--border);}
+.ob-exam-row-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ob-exam-name{flex:1;border:none;background:transparent;font-size:14px;color:var(--text);font-family:inherit;outline:none;}
+.ob-exam-del{width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,0.12);color:var(--red);border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ob-exam-bottom{display:flex;gap:8px;}
+.ob-exam-date,.ob-exam-subj{flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:inherit;outline:none;}
+.ob-add-exam{width:100%;padding:11px;border-radius:12px;border:1.5px dashed rgba(239,68,68,0.25);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;opacity:0.7;}
+.ob-footer{padding:20px 18px 0;}
+.ob-progress{display:flex;gap:5px;justify-content:center;margin-bottom:20px;}
+.ob-prog-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);transition:all 0.3s;}
+.ob-prog-dot.active{background:var(--accent);width:18px;border-radius:3px;}
+.ob-prog-dot.done{background:rgba(124,106,247,0.5);}
+.ob-next-btn{width:100%;padding:15px;border-radius:16px;border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.15s;}
+.ob-next-btn:active{opacity:0.8;}
+.ob-skip{width:100%;padding:10px;border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;}
+.ob-avatar-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.ob-avatar-btn{padding:16px;border-radius:14px;border:2px solid var(--border);background:var(--surface2);font-size:36px;cursor:pointer;text-align:center;transition:all 0.15s;}
+.ob-avatar-btn.selected{border-color:var(--accent);background:rgba(124,106,247,0.12);}
+.ob-avatar-btn:active{transform:scale(0.92);}
+.ob-rewards-list{display:flex;flex-direction:column;gap:8px;}
+.ob-reward-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:10px 12px;border:1px solid var(--border);}
+.ob-reward-icon{font-size:22px;}
+.ob-reward-name{flex:1;border:none;background:transparent;font-size:14px;color:var(--text);font-family:inherit;outline:none;}
+.ob-reward-cost{width:60px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--gold);font-size:12px;font-family:inherit;outline:none;text-align:center;}
+
+/* ===== PROGRESS ===== */
+function renderProgress(){
+  document.getElementById('badge-grid').innerHTML=badges.map(b=>`
+    <div class="badge-card ${b.earned?'earned':''}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+      ${b.earned?'<div class="badge-earned-label">✓ Obtenu</div>':''}
+    </div>`).join('');
+
+  document.getElementById('skills-list').innerHTML=skills.map(s=>{
+    const canUnlock=!s.unlocked&&(s.req===null||skills.find(x=>x.id===s.req)?.unlocked);
+    return `<div class="skill-row">
+      <div class="skill-icon-box">${s.icon}</div>
+      <div class="skill-body"><div class="skill-name">${s.name}</div><div class="skill-desc">${s.desc}</div></div>
+      <button class="skill-action" style="background:${s.unlocked?'rgba(34,197,94,0.15)':canUnlock?'rgba(124,106,247,0.15)':'rgba(255,255,255,0.05)'};color:${s.unlocked?'var(--green)':canUnlock?'var(--accent2)':'var(--muted)'};" onclick="${canUnlock?'unlockSkill('+s.id+')':''}">${s.unlocked?'✓ Actif':canUnlock?'⭐ '+s.cost:'🔒'}</button>
+    </div>`;}).join('');
+
+  document.getElementById('reward-grid').innerHTML=rewards.map(r=>`
+    <div class="reward-card ${r.owned?'owned':''}" onclick="${r.owned?'':'buyReward('+r.id+',event)'}">
+      <div class="reward-icon">${r.icon}</div>
+      <div class="reward-name">${r.name}</div>
+      <div class="reward-cost">${r.owned?'✓ Acheté':'💰 '+r.cost}</div>
+    </div>`).join('');
+
+  const sorted=exams.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('planning-list').innerHTML=sorted.length
+    ?sorted.map(ex=>{
+      const days=Math.ceil((new Date(ex.date)-new Date())/(1000*60*60*24));
+      const cls=days<=3?'urgent':days<=7?'soon':'ok-time';
+      const d=new Date(ex.date);
+      return `<div class="plan-item">
+        <div class="plan-date"><span class="plan-date-num">${d.getDate()}</span>${d.toLocaleDateString('fr-FR',{month:'short'})}</div>
+        <div class="plan-bar" style="background:${ex.color||'var(--accent)'}"></div>
+        <div class="plan-info"><div class="plan-name">${ex.name}</div><div class="plan-sub">${subjects.find(s=>s.id===ex.subject)?.name||'Matière'}</div></div>
+        <div class="plan-days-left ${cls}">${days}j</div>
+      </div>`;}).join('')
+    :'<div class="empty">Aucun examen planifié</div>';
+}
+
+function unlockSkill(id){
+  const s=skills.find(x=>x.id===id);if(!s||s.unlocked)return;
+  if(s.cost>skillPtsAvail()){showOverlay('⭐ Points insuffisants','Monte de niveau pour débloquer cette compétence !');return;}
+  s.unlocked=true;save();renderProgress();updateSidebar();
+}
+function buyReward(id,e){
+  const r=rewards.find(x=>x.id===id);if(!r||r.owned)return;
+  if(player.coins<r.cost){e.currentTarget.style.animation='shake 0.3s';setTimeout(()=>e.currentTarget.style.animation='',300);showOverlay('💰 Pas assez de pièces !','Continue à réviser pour en gagner.');return;}
+  if(!confirm(`Dépenser ${r.cost} pièces pour "${r.name}" ?`))return;
+  player.coins-=r.cost;r.owned=true;save();renderProgress();updateSidebar();
+}
+function addExam(){
+  const name=prompt('Nom de l\'examen :');if(!name?.trim())return;
+  const date=prompt('Date (format YYYY-MM-DD, ex: 2026-05-15) :');if(!date)return;
+  exams.push({id:Date.now(),name:name.trim(),date,subject:subjects[0]?.id||1,color:'#7c6af7'});
+  save();renderProgress();renderDashboard();
+}
+
+/* ===== ONBOARDING ===== */
+const OB_TOTAL=5;
+const OB_AVATARS=['🧙','🧝','🦸','🧛','🧜','🧚','🐉','🦊','🐺'];
+const OB_ICON_OPTIONS=['📐','📖','🗣️','⚗️','🧠','🎨','🎵','💻','🌍','📊','🔬','📝'];
+let obSelectedAvatar='🧙';
+let obSubjects=[
+  {icon:'📐',name:'Mathématiques',color:'#3b82f6'},
+  {icon:'📖',name:'Histoire / Géo',color:'#f59e0b'},
+];
+let obExams=[];
+let obRewards=[
+  {icon:'📺',name:'Pause Netflix',cost:30},
+  {icon:'🎮',name:'Jeu vidéo 2h',cost:50},
+];
+
+function obRenderProgress(step){
+  for(let i=1;i<=OB_TOTAL;i++){
+    const el=document.getElementById('ob-prog-'+step);
+    if(!el)continue;
+    el.innerHTML=Array.from({length:OB_TOTAL},(_,j)=>`<div class="ob-prog-dot ${j+1===step?'active':j+1<step?'done':''}"></div>`).join('');
+  }
+}
+
+function obInitAvatars(){
+  document.getElementById('ob-avatar-grid').innerHTML=OB_AVATARS.map(a=>`
+    <div class="ob-avatar-btn ${a===obSelectedAvatar?'selected':''}" onclick="obSelectAvatar('${a}')">${a}</div>`).join('');
+}
+
+function obSelectAvatar(a){
+  obSelectedAvatar=a;
+  document.querySelectorAll('.ob-avatar-btn').forEach(b=>b.classList.toggle('selected',b.textContent===a));
+}
+
+function obRenderSubjects(){
+  document.getElementById('ob-subjects-list').innerHTML=obSubjects.map((s,i)=>`
+    <div class="ob-subject-row">
+      <div class="ob-subj-icon" onclick="obCycleSubjIcon(${i})" style="cursor:pointer;">${s.icon}</div>
+      <input class="ob-subj-name" value="${s.name}" placeholder="Nom de la matière" oninput="obSubjects[${i}].name=this.value"/>
+      <button class="ob-subj-del" onclick="obSubjects.splice(${i},1);obRenderSubjects()">✕</button>
+    </div>`).join('');
+}
+
+function obCycleSubjIcon(i){
+  const idx=OB_ICON_OPTIONS.indexOf(obSubjects[i].icon);
+  obSubjects[i].icon=OB_ICON_OPTIONS[(idx+1)%OB_ICON_OPTIONS.length];
+  obRenderSubjects();
+}
+
+function obAddSubject(){
+  obSubjects.push({icon:OB_ICON_OPTIONS[obSubjects.length%OB_ICON_OPTIONS.length],name:'',color:'#7c6af7'});
+  obRenderSubjects();
+  setTimeout(()=>{const inputs=document.querySelectorAll('.ob-subj-name');inputs[inputs.length-1]?.focus();},50);
+}
+
+function obRenderExams(){
+  const subjOpts=obSubjects.map((s,i)=>`<option value="${i}">${s.icon} ${s.name}</option>`).join('');
+  document.getElementById('ob-exams-list').innerHTML=obExams.map((ex,i)=>`
+    <div class="ob-exam-row">
+      <div class="ob-exam-row-top">
+        <div style="font-size:20px;">📅</div>
+        <input class="ob-exam-name" value="${ex.name}" placeholder="Nom de l'examen" oninput="obExams[${i}].name=this.value"/>
+        <button class="ob-exam-del" onclick="obExams.splice(${i},1);obRenderExams()">✕</button>
+      </div>
+      <div class="ob-exam-bottom">
+        <input class="ob-exam-date" type="date" value="${ex.date}" oninput="obExams[${i}].date=this.value" style="color-scheme:dark;"/>
+        <select class="ob-exam-subj" oninput="obExams[${i}].subjectIdx=parseInt(this.value)">${subjOpts}</select>
+      </div>
+    </div>`).join('')||'<div style="font-size:13px;color:var(--muted);text-align:center;padding:10px 0;">Aucun examen ajouté</div>';
+}
+
+function obAddExam(){
+  const today=new Date();
+  const inTwoWeeks=new Date(today.getTime()+14*86400000).toISOString().split('T')[0];
+  obExams.push({name:'',date:inTwoWeeks,subjectIdx:0});
+  obRenderExams();
+}
+
+function obRenderRewards(){
+  document.getElementById('ob-rewards-list').innerHTML=obRewards.map((r,i)=>`
+    <div class="ob-reward-row">
+      <div class="ob-reward-icon" onclick="obCycleRewardIcon(${i})" style="cursor:pointer;">${r.icon}</div>
+      <input class="ob-reward-name" value="${r.name}" placeholder="Ta récompense" oninput="obRewards[${i}].name=this.value"/>
+      <input class="ob-reward-cost" type="number" value="${r.cost}" min="5" max="500" oninput="obRewards[${i}].cost=parseInt(this.value)||20" title="Coût en pièces"/>
+    </div>`).join('');
+}
+
+const REWARD_ICONS=['📺','🎮','🍕','🎉','🌴','🎬','🎵','🛍️','☕','🏖️'];
+function obCycleRewardIcon(i){
+  const idx=REWARD_ICONS.indexOf(obRewards[i].icon);
+  obRewards[i].icon=REWARD_ICONS[(idx+1)%REWARD_ICONS.length];
+  obRenderRewards();
+}
+function obAddReward(){
+  obRewards.push({icon:REWARD_ICONS[obRewards.length%REWARD_ICONS.length],name:'',cost:30});
+  obRenderRewards();
+}
+
+function obNext(current){
+  // Validate step 1
+  if(current===1){
+    const name=document.getElementById('ob-name').value.trim();
+    if(!name){document.getElementById('ob-name').focus();document.getElementById('ob-name').style.borderColor='var(--red)';return;}
+  }
+  const next=current+1;
+  document.getElementById('ob-step-'+current).classList.remove('active');
+  document.getElementById('ob-step-'+next).classList.add('active');
+  document.querySelector('.onboarding').scrollTop=0;
+  obRenderProgress(next);
+  if(next===2)obRenderSubjects();
+  if(next===3)obRenderExams();
+  if(next===4)obRenderRewards();
+  if(next===5){
+    const name=document.getElementById('ob-name').value.trim()||'Héros';
+    document.getElementById('ob-ready-name').textContent=name;
+  }
+}
+
+function obFinish(){
+  // Collect name & avatar
+  const name=document.getElementById('ob-name').value.trim()||'Étudiant';
+  const studyLevel=document.getElementById('ob-level').value;
+
+  // Sync subjects
+  subjects=obSubjects.filter(s=>s.name.trim()).map((s,i)=>({
+    id:i+1,name:s.name.trim(),icon:s.icon,color:s.color||'#7c6af7',xp:0,level:1
+  }));
+  if(!subjects.length) subjects=[{id:1,name:'Matière 1',icon:'📚',color:'#7c6af7',xp:0,level:1}];
+
+  // Sync exams
+  exams=obExams.filter(ex=>ex.name.trim()&&ex.date).map((ex,i)=>({
+    id:i+1,name:ex.name.trim(),date:ex.date,
+    subject:subjects[ex.subjectIdx||0]?.id||1,
+    color:subjects[ex.subjectIdx||0]?.color||'#7c6af7'
+  }));
+
+  // Sync rewards
+  rewards=obRewards.filter(r=>r.name.trim()).map((r,i)=>({
+    id:i+1,name:r.name.trim(),icon:r.icon,cost:r.cost||30,owned:false
+  }));
+  if(!rewards.length) rewards=[{id:1,name:'Pause méritée',icon:'☕',cost:20,owned:false}];
+
+  // Sync bosses from exams
+  bosses=exams.map((ex,i)=>({
+    id:i+1,name:ex.name,sub:subjects.find(s=>s.id===ex.subject)?.name||'',
+    icon:'💀',hp:100,maxHp:100,active:i===0,defeated:false,
+    reward:'150 XP + 50 pièces'
+  }));
+
+  // Update player name display
+  document.querySelector('.pname').textContent=name;
+  player.avatar=obSelectedAvatar;
+  document.getElementById('p-avatar').textContent=obSelectedAvatar;
+
+  localStorage.setItem('sq3_onboarded','1');
+  localStorage.setItem('sq3_username',name);
+  localStorage.setItem('sq3_studylevel',studyLevel);
+  save();
+
+  // Hide onboarding, show app
+  document.getElementById('onboarding').style.display='none';
+  document.querySelector('.tab-bar').style.display='flex';
+  updatePomoSubjectSel();
+  renderDashboard();
+  updateSidebar();
+}
+
+function checkOnboarding(){
+  if(localStorage.getItem('sq3_onboarded')==='1'){
+    document.getElementById('onboarding').style.display='none';
+    // Restore username
+    const name=localStorage.getItem('sq3_username');
+    if(name) document.querySelector('.pname').textContent=name;
+    if(player.avatar) document.getElementById('p-avatar').textContent=player.avatar;
+  } else {
+    // Show onboarding, hide tab bar
+    document.querySelector('.tab-bar').style.display='none';
+    obInitAvatars();
+    obRenderProgress(1);
+  }
+}
+
+/* ===== INIT ===== */
+checkOnboarding();
+updateStreak();
+updateSidebar();
+updatePomoDisplay();
+renderPomoDots();
+renderDashboard();
+checkBadges();
+</script>
+</body>
+</html>
